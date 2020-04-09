@@ -1,0 +1,19 @@
+[build]
+  command = "npm run build"
+  functions = "src/functions"
+  NODE_ENV = "12"
+  publish = "/dist"
+
+[dev]
+  port = 8080
+  publish = "/dist"
+  command = "npm run dev"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[template.environment]
+  OKTA_ORG_URL = "Base URL of your Okta account"
+  OKTA_CLIENT_ID = "Okta application client ID"
