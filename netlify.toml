@@ -15,5 +15,5 @@
   status = 200
 
 [template.environment]
-  OKTA_ORG_URL = "Base URL of your Okta account"
-  OKTA_CLIENT_ID = "Okta application client ID"
+  OKTA_ORG_URL = "https://dev-822608.oktapreview.com"
+  OKTA_CLIENT_ID = "0oaqufq2ndeMTqjd20h7"
