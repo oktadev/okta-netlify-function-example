@@ -13,7 +13,3 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
-
-[build.environment]
-  OKTA_ORG_URL = "https://dev-822608.oktapreview.com"
-  OKTA_CLIENT_ID = "0oaqufq2ndeMTqjd20h7"

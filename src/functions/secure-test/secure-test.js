@@ -24,7 +24,7 @@ const verifyToken = async ( authHeader ) => {
 	return jwt;
 };
 
-exports.handler = async ( event, context ) => {
+exports.handler = async ( event ) => {
 	try {
 		const jwt = await verifyToken( event.headers.authorization );
 
