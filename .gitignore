@@ -1,7 +1,7 @@
-# dependecies installed by npm
+# dependencies installed by npm
 node_modules
 
-# secrets
+# dev environment variables
 .env
 
 # macOS related files

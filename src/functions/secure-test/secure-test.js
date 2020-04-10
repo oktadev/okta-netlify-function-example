@@ -5,23 +5,32 @@ const OktaJwtVerifier = require( "@okta/jwt-verifier" );
 
 // Verify the access token passed to the function
 const verifyToken = async ( authHeader ) => {
-	const parts = authHeader.split( " " );
-	if ( parts.length !== 2 || parts[0] !== "Bearer" ) {
-		// No access token was passed
+	try {
+		const parts = authHeader.split( " " );
+		if ( parts.length !== 2 || parts[0] !== "Bearer" ) {
+			// No access token was passed
+			return null;
+		}
+		const accessToken = parts[1];
+
+		// Create an instance of the verifier using the Okta application's
+		// Org URL and client ID
+		const jwtVerifier = new OktaJwtVerifier( {
+			issuer: `${ process.env.OKTA_ORG_URL }/oauth2/default`,
+			clientId: process.env.OKTA_CLIENT_ID
+		} );
+
+		// verify the token
+		// if there's a problem with the token, such as expired or it has been
+		// tampered with, the verifier will throw an exception
+		const jwt = await jwtVerifier.verifyAccessToken( accessToken, "api://default" );
+
+		// returned the decoded JWT
+		return jwt;
+	} catch ( err ) {
+		console.log( err );
 		return null;
 	}
-	const accessToken = parts[1];
-	const jwtVerifier = new OktaJwtVerifier( {
-		issuer: `${ process.env.OKTA_ORG_URL }/oauth2/default`,
-		clientId: process.env.OKTA_CLIENT_ID
-	} );
-
-	// verify the token
-	// if there's a problem with the token, it will throw an exception
-	const jwt = await jwtVerifier.verifyAccessToken( accessToken, "api://default" );
-	
-	// returned the decoded JWT
-	return jwt;
 };
 
 exports.handler = async ( event ) => {
