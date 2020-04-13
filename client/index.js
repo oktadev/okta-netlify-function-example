@@ -3,8 +3,8 @@ import OktaSignIn from "@okta/okta-signin-widget";
 import "@okta/okta-signin-widget/dist/css/okta-sign-in.min.css";
 import "./site.css";
 
-const oktaOrgUrl = "https://dev-822608.oktapreview.com";
-const oktaClientId = "0oaqufq2ndeMTqjd20h7";
+const oktaOrgUrl = "{yourOrgUrl}";
+const oktaClientId = "{yourClientId}";
 
 // helper function to update the results text
 const displayMessage = msg => {
