@@ -14,6 +14,8 @@ const displayMessage = msg => {
 // Displays a welcome message and enables the "Sign out" button
 const updateProfile = idToken => {
 	try {
+		// Show Sign Out button
+		document.getElementById( "signOut" ).style.visibility = "visible";
 		displayMessage( `Hello, ${ idToken.claims.name } (${ idToken.claims.email })` );
 	} catch ( err ) {
 		console.log( err );
@@ -21,7 +23,18 @@ const updateProfile = idToken => {
 	}
 };
 
-const registerButtonEvents = async ( oktaSignIn ) => {
+const signOut = ( signInWidget ) => {
+	displayMessage( "" );
+
+	// clear local stored tokens and sign out of Okta
+	signInWidget.authClient.tokenManager.clear();
+	signInWidget.authClient.signOut();
+
+	// reload page
+	window.location.reload();
+};
+
+const registerButtonEvents = async ( signInWidget ) => {
 	// "Test public API" button click event handler
 	document.getElementById( "publicButton" ).addEventListener( "click", async function () {
 		try {
@@ -40,7 +53,7 @@ const registerButtonEvents = async ( oktaSignIn ) => {
 		displayMessage( "" );
 		try {
 			// get the current access token to make the request
-			const accessToken = await oktaSignIn.authClient.tokenManager.get( "accessToken" );
+			const accessToken = await signInWidget.authClient.tokenManager.get( "accessToken" );
 			if ( !accessToken ) {
 				displayMessage( "You are not logged in" );
 				return;
@@ -62,57 +75,49 @@ const registerButtonEvents = async ( oktaSignIn ) => {
 
 	// "Sign out" button click event handler
 	document.getElementById( "signOut" ).addEventListener( "click", async function() {
-		displayMessage( "" );
-
-		// clear local stored tokens and sign out of Okta
-		oktaSignIn.authClient.tokenManager.clear();
-		oktaSignIn.authClient.signOut();
-
-		// reload page
-		window.location.reload();
+		signOut( signInWidget );
 	} );
 };
 
-const runOktaLogin = async ( oktaSignIn ) => {
+const showSignIn = ( signInWidget ) => {
+	signInWidget.showSignInToGetTokens( {
+		clientId: oktaClientId,
+		redirectUri: window.location.origin,
+		// Return an access token from the authorization server
+		getAccessToken: true,
+		// Return an ID token from the authorization server
+		getIdToken: true,
+		scope: "openid profile email",
+	} );
+};
+
+const runOktaLogin = async ( signInWidget ) => {
 	try {
 		// Check if there's an existing login session
-		const session = await oktaSignIn.authClient.session.get();
+		const session = await signInWidget.authClient.session.get();
 
 		if ( session.status === "ACTIVE" ) {
-			// Show Sign Out button
-			document.getElementById( "signOut" ).style.visibility = "visible";
+			// Check if there are tokens in the URL after a redirect
+			if ( signInWidget.hasTokensInUrl() ) {
+				const res = await signInWidget.authClient.token.parseFromUrl();
+				signInWidget.authClient.tokenManager.add( "idToken", res.tokens.idToken );
+				signInWidget.authClient.tokenManager.add( "accessToken", res.tokens.accessToken );
+			}
 
 			// See if the idToken has already been added to the token manager
-			const idToken = await oktaSignIn.authClient.tokenManager.get( "idToken" );
-
-			if ( !idToken ) {
-				// Immediately after redirect from signing into Okta,
-				// the access and ID tokens have not yet been added to local storage
-				const tokens = await oktaSignIn.authClient.token.parseFromUrl();
-				for( const token of tokens ) {
-					if ( token.idToken ) {
-						oktaSignIn.authClient.tokenManager.add( "idToken", token );
-						updateProfile( token );
-					}
-					if ( token.accessToken ) {
-						oktaSignIn.authClient.tokenManager.add( "accessToken", token );
-					}
-				}
-			} else {
+			const idToken = await signInWidget.authClient.tokenManager.get( "idToken" );
+			if ( idToken ) {
 				// There's already a login session and tokens, so update the welcome message
-				updateProfile( idToken );
+				return updateProfile( idToken );
 			}
+
+			// It's possible to have logged in somewhere else and have an active session,
+			// but not have the idToken we want for this application
+			showSignIn( signInWidget );
+
 		} else {
 			// User has not yet logged in, so show the login form
-			oktaSignIn.showSignInToGetTokens( {
-				clientId: oktaClientId,
-				redirectUri: window.location.origin,
-				// Return an access token from the authorization server
-				getAccessToken: true,
-				// Return an ID token from the authorization server
-				getIdToken: true,
-				scope: "openid profile email",
-			} );
+			showSignIn( signInWidget );
 		}
 	} catch ( err ) {
 		console.log( err );
@@ -123,7 +128,7 @@ const runOktaLogin = async ( oktaSignIn ) => {
 document.addEventListener( "DOMContentLoaded", async () => {
 	try {
 		// create an instance of the Okta Sign-In Widget
-		const oktaSignIn = new OktaSignIn( {
+		const signInWidget = new OktaSignIn( {
 			baseUrl: oktaOrgUrl,
 			el: "#widget-container",
 			redirectUrl: window.location.origin,
@@ -137,8 +142,8 @@ document.addEventListener( "DOMContentLoaded", async () => {
 				registration: true
 			}
 		} );
-		await registerButtonEvents( oktaSignIn );
-		await runOktaLogin( oktaSignIn );
+		await registerButtonEvents( signInWidget );
+		await runOktaLogin( signInWidget );
 	} catch ( err ) {
 		console.log( err );
 		displayMessage( err.message );
